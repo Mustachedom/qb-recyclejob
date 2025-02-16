@@ -519,6 +519,97 @@ end)
 -- Threads
 
 CreateThread(function()
+    if Config.SellMaterials then 
+        RequestModel(GetHashKey('mp_m_freemode_01'))
+        while not HasModelLoaded(GetHashKey('mp_m_freemode_01')) do
+            Wait(0)
+        end
+        local loc = vector3(1048.224, -3097.071, -38.999)
+        local ped = CreatePed(4, GetHashKey('mp_m_freemode_01'), loc.x, loc.y, loc.z, 180.0, false, false)
+        FreezeEntityPosition(ped, true)
+        SetEntityInvincible(ped, true)
+        SetBlockingOfNonTemporaryEvents(ped, true)
+        if Config.UseTarget then 
+            exports['qb-target']:AddTargetEntity(ped, {
+                options = {
+                    {
+                        icon = 'fas fa-dollar-sign',
+                        label = Lang:t('text.sell_materials'),
+                        action = function()
+                            QBCore.Functions.TriggerCallback('qb-recyclejob:server:getPriceList', function(data)
+                                local menu = {}
+                                for k, v in pairs (data) do 
+                                    header = QBCore.Shared.Items[k].label,
+                                    txt = 'Price: $'..v,
+                                    action = function()
+                                        local dialog = exports['qb-input']:ShowInput({
+                                            header = "Test",
+                                            submitText = "Bill",
+                                            inputs = {
+                                                {
+                                                    header = "Amount",
+                                                    type = "number",
+                                                },
+                                            }
+                                        })
+                                        if not dialog and dialog[1] then return end
+                                        TriggerServerEvent('qb-recyclejob:server:sellItem', k, dialog[1])
+                                    end
+                                end
+                            end)
+                        end
+                    },
+                },
+                distance = 1.5
+            })
+        else
+            sellZone = BoxZone:Create(loc, 4, 1.5, {
+                name = pickupTargetID,
+                heading = 180.0,
+                minZ = loc.z - 1.0,
+                maxZ = loc.z + 2.0,
+                debugPoly = false
+            })
+            pickupZone:onPlayerInOut(function(isPointInside)
+                local brake = false
+                if isPointInside then
+                    exports['qb-core']:DrawText(Lang:t('text.point_get_package'), 'left')
+                    repeat
+                        Wait(1)
+                        if IsControlJustReleased(0, 38) then
+                            brake = true
+                            exports['qb-core']:KeyPressed()
+                            QBCore.Functions.TriggerCallback('qb-recyclejob:server:getPriceList', function(data)
+                                local menu = {}
+                                for k, v in pairs (data) do 
+                                    header = QBCore.Shared.Items[k].label,
+                                    txt = 'Price: $'..v,
+                                    action = function()
+                                        local dialog = exports['qb-input']:ShowInput({
+                                            header = "Test",
+                                            submitText = "Bill",
+                                            inputs = {
+                                                {
+                                                    header = "Amount",
+                                                    type = "number",
+                                                },
+                                            }
+                                        })
+                                        if not dialog and dialog[1] then return end
+                                        TriggerServerEvent('qb-recyclejob:server:sellItem', k, dialog[1])
+                                    end
+                                end
+                            end)
+                        end
+                    until brake
+                else
+                    exports['qb-core']:HideText()
+                end
+    
+                isInsidePickupZone = isPointInside
+            end)
+        end
+    end
     local sleep = 500
 
     while not LocalPlayer.state.isLoggedIn do
@@ -606,4 +697,5 @@ CreateThread(function()
             Wait(sleep)
         end
     end
+
 end)
