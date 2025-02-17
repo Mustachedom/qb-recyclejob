@@ -54,6 +54,12 @@ CreateThread(function() -- debug thread
     end
 end)
 
+QBCore.Functions.CreateCallback('qb-recyclejob:server:getPriceList', function(source, cb)
+    local src = source 
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not isClose(src, 'sell') then return false end
+    cb(sales)
+end)
 local function adjustStock(item, change, amount)
     if not Config.LimitedMaterials then return end
     if change == 'add' then

@@ -517,6 +517,33 @@ RegisterNetEvent('qb-recyclejob:client:target:dropPackage', function()
 end)
 
 -- Threads
+local function sellMaterials()
+    QBCore.Functions.TriggerCallback('qb-recyclejob:server:getPriceList', function(data)
+        local menu = {}
+        if data == false then QBCore.Functions.Notify('You Are To Far To Sell Things', 'error') return end
+        for k, v in pairs (data) do 
+            menu[#menu+1] = {
+            header = QBCore.Shared.Items[k].label,
+            txt = 'Price: $'..v,
+            action = function()
+                local dialog = exports['qb-input']:ShowInput({
+                    header = "Test",
+                    submitText = "Bill",
+                    inputs = {
+                        {
+                            header = "Amount",
+                            type = "number",
+                        },
+                    }
+                })
+                if not dialog and dialog[1] then return end
+                TriggerServerEvent('qb-recyclejob:server:sellItem', k, dialog[1])
+            end
+            }
+        end
+        exports['qb-menu']:openMenu(menu)
+    end)
+end
 
 CreateThread(function()
     if Config.SellMaterials then 
@@ -536,27 +563,7 @@ CreateThread(function()
                         icon = 'fas fa-dollar-sign',
                         label = Lang:t('text.sell_materials'),
                         action = function()
-                            QBCore.Functions.TriggerCallback('qb-recyclejob:server:getPriceList', function(data)
-                                local menu = {}
-                                for k, v in pairs (data) do 
-                                    header = QBCore.Shared.Items[k].label,
-                                    txt = 'Price: $'..v,
-                                    action = function()
-                                        local dialog = exports['qb-input']:ShowInput({
-                                            header = "Test",
-                                            submitText = "Bill",
-                                            inputs = {
-                                                {
-                                                    header = "Amount",
-                                                    type = "number",
-                                                },
-                                            }
-                                        })
-                                        if not dialog and dialog[1] then return end
-                                        TriggerServerEvent('qb-recyclejob:server:sellItem', k, dialog[1])
-                                    end
-                                end
-                            end)
+                            sellMaterials()
                         end
                     },
                 },
@@ -570,43 +577,21 @@ CreateThread(function()
                 maxZ = loc.z + 2.0,
                 debugPoly = false
             })
-            pickupZone:onPlayerInOut(function(isPointInside)
+            sellZone:onPlayerInOut(function(isPointInside)
                 local brake = false
                 if isPointInside then
                     exports['qb-core']:DrawText(Lang:t('text.point_get_package'), 'left')
                     repeat
-                        Wait(1)
+                        Wait(0)
                         if IsControlJustReleased(0, 38) then
                             brake = true
                             exports['qb-core']:KeyPressed()
-                            QBCore.Functions.TriggerCallback('qb-recyclejob:server:getPriceList', function(data)
-                                local menu = {}
-                                for k, v in pairs (data) do 
-                                    header = QBCore.Shared.Items[k].label,
-                                    txt = 'Price: $'..v,
-                                    action = function()
-                                        local dialog = exports['qb-input']:ShowInput({
-                                            header = "Test",
-                                            submitText = "Bill",
-                                            inputs = {
-                                                {
-                                                    header = "Amount",
-                                                    type = "number",
-                                                },
-                                            }
-                                        })
-                                        if not dialog and dialog[1] then return end
-                                        TriggerServerEvent('qb-recyclejob:server:sellItem', k, dialog[1])
-                                    end
-                                end
-                            end)
+                            sellMaterials()
                         end
                     until brake
                 else
                     exports['qb-core']:HideText()
                 end
-    
-                isInsidePickupZone = isPointInside
             end)
         end
     end
