@@ -42,13 +42,40 @@ if Config.LimitedMaterials then
     }
 end
 
+local function isClose(source, loc)
+    local playerPed = GetPlayerPed(source)
+    local Player = QBCore.Functions.GetPlayer(source)
+    local cid = Player.PlayerData.citizenid
+    local playerCoords = GetEntityCoords(playerPed)
+    local distance = nil
+
+    if loc == 'turnIn' then
+        distance = #(playerCoords - vector3(dropLocation.x, dropLocation.y, dropLocation.z))
+    elseif loc == 'sell' then
+        distance = #(playerCoords - vector3(salesLoc.x, salesLoc.y, salesLoc.z))
+    else 
+        return false
+    end
+
+    if distance < 5.0 then
+        return true
+    else
+        uhohs[cid] = uhohs[cid] + 1 or 0
+        if uhohs[cid] >= 3 then
+            exploitBan(src, 'Exploiting distance on qb-recyclejob')
+        end
+        return false
+    end
+end
+
+
 CreateThread(function() -- debug thread 
     while true do
         Wait(5000)
-        for k, v in pairs (stock) do 
+        for k, v in pairs (Stock) do 
             print('item: ' .. k .. ' stock: ' .. v)
         end
-        for k, v in pairs (sales) do 
+        for k, v in pairs (Sales) do 
             print('item: ' .. k .. ' price: ' .. v)
         end
     end
@@ -58,7 +85,7 @@ QBCore.Functions.CreateCallback('qb-recyclejob:server:getPriceList', function(so
     local src = source 
     local Player = QBCore.Functions.GetPlayer(src)
     if not isClose(src, 'sell') then return false end
-    cb(sales)
+    cb(Sales)
 end)
 local function adjustStock(item, change, amount)
     if not Config.LimitedMaterials then return end
@@ -108,32 +135,6 @@ local function exploitBan(id, reason)
     TriggerEvent('qb-log:server:CreateLog', 'recyclejob', 'Player Banned', 'red',
         string.format('%s was banned by %s for %s', GetPlayerName(id), 'qb-recyclejob', reason), true)
     DropPlayer(id, 'You were permanently banned by the server for: Exploiting')
-end
-
-local function isClose(source, loc)
-    local playerPed = GetPlayerPed(source)
-    local Player = QBCore.Functions.GetPlayer(source)
-    local cid = Player.PlayerData.citizenid
-    local playerCoords = GetEntityCoords(playerPed)
-    local distance = nil
-
-    if loc == 'turnIn' then
-        distance = #(playerCoords - vector3(dropLocation.x, dropLocation.y, dropLocation.z))
-    elseif loc == 'sell' then
-        distance = #(playerCoords - vector3(salesLoc.x, salesLoc.y, salesLoc.z))
-    else 
-        return false
-    end
-
-    if distance < 5.0 then
-        return true
-    else
-        uhohs[cid] = uhohs[cid] + 1 or 0
-        if uhohs[cid] >= 3 then
-            exploitBan(src, 'Exploiting distance on qb-recyclejob')
-        end
-        return false
-    end
 end
 
 local function getItem(source, item, amount)
