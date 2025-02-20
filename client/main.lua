@@ -294,6 +294,25 @@ local function ScrapAnim()
     end)
 end
 
+local function searchAnim()
+    local time = 5
+    loadAnimDict('mini@repair')
+    TaskPlayAnim(PlayerPedId(), 'mini@repair', 'fixing_a_ped', 3.0, 3.0, -1, 1, 0, false, false, false)
+    local repairing = true
+
+    CreateThread(function()
+        while repairing do
+            Wait(1000)
+            time = time - 1
+            if time <= 0 then
+                repairing = false
+                StopAnimTask(PlayerPedId(), 'mini@repair', 'fixing_a_ped', 1.0)
+            end
+        end
+    end)
+end
+
+
 local function GetRandomPackage()
     packageCoords = Config.PickupLocations[math.random(1, #Config.PickupLocations)]
     RegisterPickupTarget(packageCoords)
@@ -476,6 +495,7 @@ RegisterNetEvent('qb-recyclejob:client:target:pickupPackage', function()
         return
     end
 
+    searchAnim()
     QBCore.Functions.Progressbar('pickup_reycle_package', Lang:t('text.picking_up_the_package'), Config.PickupActionDuration, false, true, {
         disableMovement = true,
         disableCarMovement = true,
